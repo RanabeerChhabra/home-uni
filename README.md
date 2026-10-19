@@ -2,7 +2,7 @@
 
 A personalized learning plan. Tell home uni what you want to learn and why, and it builds a curriculum from hand-picked videos and articles, scheduled around your week so every session is finishable.
 
-**Live:** https://ascend-alpha-five.vercel.app
+**Live:** https://rana.beer/homeuni
 
 ## How it works
 

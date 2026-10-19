@@ -1,3 +1,11 @@
 {
-  "redirects": [{ "source": "/", "destination": "/homeuni/", "permanent": false }]
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.rana.beer" }],
+      "destination": "https://rana.beer/:path*",
+      "permanent": true
+    },
+    { "source": "/", "destination": "/homeuni/", "permanent": false }
+  ]
 }
