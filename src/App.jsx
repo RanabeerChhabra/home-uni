@@ -1,80 +1,185 @@
-import { useEffect, useMemo, useState } from 'react'
-import Survey from './components/Survey.jsx'
-import Calendar from './components/Calendar.jsx'
-import ComingSoon from './components/ComingSoon.jsx'
-import { TOPICS, getCurriculum } from './data/curriculum.js'
-import { buildSchedule } from './utils/schedule.js'
-import { loadState, saveState, clearState } from './utils/storage.js'
-import { recordActivity, initialStreak, POINTS_PER_ITEM } from './utils/streak.js'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import Wizard from './components/Wizard.jsx'
+import Dashboard from './components/Dashboard.jsx'
+import ConfirmDialog from './components/ConfirmDialog.jsx'
+import { QuizModal } from './components/Quiz.jsx'
+import { CURRICULUM } from './data/curriculum.js'
+import { QUIZ_BANK } from './data/quizzes.js'
+import videoMeta from './data/videoMeta.json'
+import { buildPlan, isSessionDone } from './utils/plan.js'
+import { enrich } from './utils/resources.js'
+import { tailorItems } from './utils/tailor.js'
+import { quizStatus, POINTS_PER_CORRECT } from './utils/quiz.js'
+import { clearState, loadState, saveState } from './utils/storage.js'
+import { initialStreak, recordActivity } from './utils/streak.js'
+import { fromKey, startOfDay, toKey } from './utils/dates.js'
 
 const saved = loadState()
 
+// Re-renders when the calendar day changes, so "today" never goes stale in a long-lived tab.
+function useToday() {
+  const [today, setToday] = useState(() => startOfDay(new Date()))
+  useEffect(() => {
+    const tick = () => setToday((prev) => (toKey(prev) === toKey(new Date()) ? prev : startOfDay(new Date())))
+    const id = setInterval(tick, 60 * 1000)
+    document.addEventListener('visibilitychange', tick)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', tick)
+    }
+  }, [])
+  return today
+}
+
 export default function App() {
-  const [answers, setAnswers] = useState(saved?.answers ?? null)
-  const [doneItems, setDoneItems] = useState(new Set(saved?.doneItems ?? []))
+  const [profile, setProfile] = useState(saved?.profile ?? null)
+  const [done, setDone] = useState(() => new Set(saved?.done ?? []))
   const [streak, setStreak] = useState(saved?.streak ?? initialStreak())
+  const [quizResults, setQuizResults] = useState(saved?.quizResults ?? {})
+  const [openQuiz, setOpenQuiz] = useState(null) // { block, questionIds, attempt }
+  const [confirm, setConfirm] = useState(null) // 'startOver' | 'replan'
+  const [building, setBuilding] = useState(false) // wizard shown over an existing plan
+  const today = useToday()
 
-  const topicMeta = answers ? TOPICS.find((t) => t.id === answers.topic) : null
-  const curriculumItems = answers ? getCurriculum(answers.topic, answers.level) : null
-
-  const schedule = useMemo(() => {
-    if (!curriculumItems) return null
-    return buildSchedule(curriculumItems, answers.daysPerWeek)
-  }, [curriculumItems, answers])
+  const plan = useMemo(() => {
+    if (!profile) return null
+    const all = CURRICULUM[profile.topic][profile.level]
+    const items = tailorItems(all, {
+      focus: profile.focus,
+      format: profile.format,
+      minutesOf: (i) => enrich(i, videoMeta).minutes,
+    })
+    return buildPlan({
+      items,
+      capacity: profile.sessionMinutes,
+      daysPerWeek: profile.daysPerWeek,
+      startDate: fromKey(profile.startDate),
+      archived: new Set(profile.archived),
+      meta: videoMeta,
+    })
+  }, [profile])
 
   useEffect(() => {
-    if (!answers) {
-      clearState()
-      return
-    }
-    saveState({ answers, doneItems: [...doneItems], streak })
-  }, [answers, doneItems, streak])
+    if (!profile) return
+    saveState({ profile, done: [...done], streak, quizResults })
+  }, [profile, done, streak, quizResults])
 
-  function handleSurveyComplete(surveyAnswers) {
-    setDoneItems(new Set())
-    setStreak(initialStreak())
-    setAnswers(surveyAnswers)
+  const quizXp = Object.values(quizResults).reduce((sum, r) => sum + r.best * POINTS_PER_CORRECT, 0)
+  const learnedXp = useMemo(() => {
+    if (!plan) return 0
+    let sum = 0
+    for (const u of plan.allUnits) if (done.has(u.id)) sum += u.minutes
+    return sum
+  }, [plan, done])
+  const xp = learnedXp + quizXp
+
+  const startPlan = useCallback((newProfile) => {
+    setProfile(newProfile)
+    setDone(new Set())
+    setQuizResults({})
+    setBuilding(false)
+  }, [])
+
+  const toggleSession = useCallback(
+    (session) => {
+      const completed = isSessionDone(session, done)
+      setDone((prev) => {
+        const next = new Set(prev)
+        for (const u of session.units) {
+          if (completed) next.delete(u.id)
+          else next.add(u.id)
+        }
+        return next
+      })
+      if (!completed) setStreak((s) => recordActivity(s, new Date()))
+    },
+    [done],
+  )
+
+  function replan() {
+    // Everything finished so far is kept (archived); the rest restarts from today.
+    setProfile((p) => ({ ...p, startDate: toKey(new Date()), archived: [...done] }))
+    setConfirm(null)
   }
 
-  function handleToggleDone(itemId) {
-    setDoneItems((prev) => {
-      const next = new Set(prev)
-      if (next.has(itemId)) {
-        next.delete(itemId)
-      } else {
-        next.add(itemId)
-        setStreak((prevStreak) => recordActivity(prevStreak))
-      }
-      return next
+  function startOver() {
+    clearState()
+    setProfile(null)
+    setDone(new Set())
+    setStreak(initialStreak())
+    setQuizResults({})
+    setConfirm(null)
+  }
+
+  function openQuizFor(block) {
+    const status = quizStatus(block, plan, done, QUIZ_BANK)
+    if (!status.unlocked) return
+    setOpenQuiz({ block, questionIds: status.questionIds, attempt: quizResults[block.id]?.attempts ?? 0 })
+  }
+
+  function finishQuiz(correct, total) {
+    const id = openQuiz.block.id
+    setQuizResults((prev) => {
+      const old = prev[id]
+      return { ...prev, [id]: { best: Math.max(old?.best ?? 0, correct), total, attempts: (old?.attempts ?? 0) + 1 } }
     })
   }
 
-  function handleStartOver() {
-    clearState()
-    setAnswers(null)
-    setDoneItems(new Set())
-    setStreak(initialStreak())
-  }
-
-  if (!answers) {
-    return <Survey onComplete={handleSurveyComplete} />
-  }
-
-  if (!curriculumItems) {
-    return <ComingSoon topicLabel={topicMeta?.label ?? 'This topic'} onBack={handleStartOver} />
+  if (!profile || building) {
+    return <Wizard onComplete={startPlan} canCancel={building} onCancel={() => setBuilding(false)} />
   }
 
   return (
-    <Calendar
-      schedule={schedule}
-      doneItems={doneItems}
-      onToggleDone={handleToggleDone}
-      topicLabel={topicMeta.label}
-      level={answers.level}
-      totalItems={curriculumItems.length}
-      points={doneItems.size * POINTS_PER_ITEM}
-      streak={streak}
-      onStartOver={handleStartOver}
-    />
+    <>
+      <Dashboard
+        profile={profile}
+        plan={plan}
+        done={done}
+        streak={streak}
+        quizResults={quizResults}
+        today={today}
+        xp={xp}
+        onToggleSession={toggleSession}
+        onOpenQuiz={openQuizFor}
+        onReplan={() => setConfirm('replan')}
+        onStartOver={() => setConfirm('startOver')}
+        onNewPlan={() => setBuilding(true)}
+      />
+
+      {openQuiz && (
+        <QuizModal
+          key={openQuiz.block.id + ':' + openQuiz.attempt}
+          block={openQuiz.block}
+          questionIds={openQuiz.questionIds}
+          bank={QUIZ_BANK}
+          attempt={openQuiz.attempt}
+          previousBest={quizResults[openQuiz.block.id]?.best}
+          onFinish={finishQuiz}
+          onClose={() => setOpenQuiz(null)}
+        />
+      )}
+
+      <ConfirmDialog
+        open={confirm === 'replan'}
+        title="Replan from today?"
+        confirmLabel="Replan"
+        onConfirm={replan}
+        onCancel={() => setConfirm(null)}
+      >
+        Everything you haven't finished is rescheduled starting today, using the same rhythm. Sessions you've completed
+        stay completed and keep their XP.
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={confirm === 'startOver'}
+        title="Start over?"
+        confirmLabel="Delete my progress"
+        danger
+        onConfirm={startOver}
+        onCancel={() => setConfirm(null)}
+      >
+        This deletes your plan, XP, streak and quiz scores from this browser. This can't be undone.
+      </ConfirmDialog>
+    </>
   )
 }
