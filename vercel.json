@@ -1,0 +1,3 @@
+{
+  "redirects": [{ "source": "/", "destination": "/homeuni/", "permanent": false }]
+}
