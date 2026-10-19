@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test tests/",
+    "verify-links": "node scripts/verify-links.mjs",
+    "format": "prettier --write .",
+    "check": "npm test && npm run build"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -20,6 +24,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.7.0",
     "oxlint": "^1.75.0",
+    "prettier": "^3.9.10",
     "vite": "^6.4.3"
   }
 }
