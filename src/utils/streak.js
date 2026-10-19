@@ -1,31 +1,28 @@
-export const POINTS_PER_ITEM = 10
-
-function toDateKey(date) {
-  return date.toISOString().slice(0, 10)
-}
-
-// Called whenever the user completes at least one item on a given calendar
-// day. Grows the streak once per day: +1 if the last active day was
-// yesterday, resets to 1 if there's a gap, no-op if already counted today.
-export function recordActivity(streak, now = new Date()) {
-  const todayKey = toDateKey(now)
-  if (streak.lastActiveDate === todayKey) {
-    return streak
-  }
-
-  const yesterday = new Date(now)
-  yesterday.setDate(now.getDate() - 1)
-  const yesterdayKey = toDateKey(yesterday)
-
-  const nextCurrent = streak.lastActiveDate === yesterdayKey ? streak.current + 1 : 1
-
-  return {
-    current: nextCurrent,
-    longest: Math.max(streak.longest, nextCurrent),
-    lastActiveDate: todayKey,
-  }
-}
+import { addDays, toKey } from './dates.js'
 
 export function initialStreak() {
   return { current: 0, longest: 0, lastActiveDate: null }
+}
+
+// Call when the person finishes a session. Grows the streak once per local day:
+// +1 if they were also active yesterday, otherwise it restarts at 1.
+export function recordActivity(streak, now = new Date()) {
+  const today = toKey(now)
+  if (streak.lastActiveDate === today) return streak
+  const yesterday = toKey(addDays(now, -1))
+  const current = streak.lastActiveDate === yesterday ? streak.current + 1 : 1
+  return { current, longest: Math.max(streak.longest, current), lastActiveDate: today }
+}
+
+// What to show. A streak you didn't extend yesterday or today has already ended.
+export function activeStreak(streak, now = new Date()) {
+  if (!streak.lastActiveDate) return 0
+  const today = toKey(now)
+  const yesterday = toKey(addDays(now, -1))
+  return streak.lastActiveDate === today || streak.lastActiveDate === yesterday ? streak.current : 0
+}
+
+// "Practiced today" drives the little flame state.
+export function practicedToday(streak, now = new Date()) {
+  return streak.lastActiveDate === toKey(now)
 }
