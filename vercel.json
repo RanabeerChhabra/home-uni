@@ -2,10 +2,29 @@
   "redirects": [
     {
       "source": "/:path*",
-      "has": [{ "type": "host", "value": "www.rana.beer" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "www.rana.beer"
+        }
+      ],
       "destination": "https://rana.beer/:path*",
       "permanent": true
     },
-    { "source": "/", "destination": "/homeuni/", "permanent": false }
+    {
+      "source": "/",
+      "destination": "/homeuni/",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/14-0",
+      "destination": "https://fourteen-zero.vercel.app/14-0"
+    },
+    {
+      "source": "/14-0/:path*",
+      "destination": "https://fourteen-zero.vercel.app/14-0/:path*"
+    }
   ]
 }
