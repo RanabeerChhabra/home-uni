@@ -31,6 +31,10 @@
       "destination": "https://onecal-app.vercel.app/"
     },
     {
+      "source": "/onecal/",
+      "destination": "https://onecal-app.vercel.app/"
+    },
+    {
       "source": "/onecal/:path*",
       "destination": "https://onecal-app.vercel.app/:path*"
     }
