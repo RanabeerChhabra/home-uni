@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>home uni usage</title>
+    <link rel="icon" href="/homeuni/favicon.png" />
+    <style>
+      :root {
+        --bg: #f6f6fb;
+        --card: #fff;
+        --ink: #1b1b3a;
+        --muted: #6b6b8d;
+        --line: #e4e4f0;
+        --brand: #6d4aff;
+        --brand-soft: #ece8ff;
+        --good: #17a673;
+        --warn: #d9822b;
+        --bad: #d6455d;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #12121f;
+          --card: #1b1b2e;
+          --ink: #f0f0fa;
+          --muted: #9a9ab8;
+          --line: #2c2c46;
+          --brand: #9b84ff;
+          --brand-soft: #2a2548;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          15px/1.5 Poppins,
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      main {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 24px 16px 64px;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0;
+      }
+      h2 {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        margin: 0 0 12px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      select,
+      button,
+      input {
+        font: inherit;
+        border: 1px solid var(--line);
+        background: var(--card);
+        color: var(--ink);
+        border-radius: 10px;
+        padding: 8px 12px;
+      }
+      button {
+        cursor: pointer;
+      }
+      button.primary {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #fff;
+        font-weight: 600;
+      }
+      .grid {
+        display: grid;
+        gap: 14px;
+      }
+      .kpis {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        margin-bottom: 14px;
+      }
+      .two {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        margin-top: 14px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 16px;
+        min-width: 0;
+      }
+      .kpi b {
+        display: block;
+        font-size: 28px;
+        line-height: 1.1;
+      }
+      .kpi span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .kpi small {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 2px;
+      }
+      .bar-row {
+        display: grid;
+        grid-template-columns: minmax(90px, 40%) 1fr auto;
+        gap: 10px;
+        align-items: center;
+        margin: 7px 0;
+        font-size: 14px;
+      }
+      .bar-row .label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .track {
+        background: var(--brand-soft);
+        border-radius: 6px;
+        height: 14px;
+        overflow: hidden;
+      }
+      .fill {
+        background: var(--brand);
+        height: 100%;
+        border-radius: 6px;
+        min-width: 2px;
+      }
+      .num {
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .pct {
+        color: var(--muted);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      td,
+      th {
+        text-align: left;
+        padding: 6px 4px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 500;
+        font-size: 12px;
+      }
+      td.r,
+      th.r {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      .heat {
+        display: grid;
+        grid-template-columns: 34px repeat(24, 1fr);
+        gap: 2px;
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .heat i {
+        aspect-ratio: 1;
+        border-radius: 3px;
+        background: var(--brand);
+      }
+      .heat span {
+        align-self: center;
+      }
+      .hint {
+        color: var(--muted);
+        font-size: 13px;
+        margin: 0 0 8px;
+      }
+      .empty {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      #login {
+        max-width: 420px;
+        margin: 12vh auto 0;
+      }
+      #login form {
+        display: grid;
+        gap: 10px;
+      }
+      .err {
+        color: var(--bad);
+        font-size: 14px;
+        min-height: 20px;
+      }
+      svg text {
+        fill: var(--muted);
+        font-size: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section id="login" class="card" hidden>
+        <h1>home uni usage</h1>
+        <p class="hint">Enter your admin token. It stays in this tab only and is never put in the address bar.</p>
+        <form id="login-form">
+          <input
+            id="token"
+            type="password"
+            autocomplete="off"
+            placeholder="Admin token"
+            aria-label="Admin token"
+            required
+          />
+          <button class="primary" type="submit">Open dashboard</button>
+          <div class="err" id="login-err" role="alert"></div>
+        </form>
+      </section>
+
+      <section id="app" hidden>
+        <header>
+          <div>
+            <h1>home uni usage</h1>
+            <span class="hint" id="meta"></span>
+          </div>
+          <div class="controls">
+            <label>
+              <span class="hint">Window</span>
+              <select id="days">
+                <option value="7">7 days</option>
+                <option value="14">14 days</option>
+                <option value="30" selected>30 days</option>
+                <option value="90">90 days</option>
+              </select>
+            </label>
+            <button id="refresh">Refresh</button>
+            <button id="signout">Sign out</button>
+          </div>
+        </header>
+        <div class="err" id="app-err" role="alert"></div>
+        <div id="out"></div>
+      </section>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id)
+      const KEY = 'homeuni:admin'
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+      const esc = (v) =>
+        String(v ?? '').replace(
+          /[&<>"']/g,
+          (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+        )
+      const n = (v) => (v == null ? '–' : Number(v).toLocaleString())
+      const pct = (a, b) => (b > 0 ? Math.round((a / b) * 1000) / 10 + '%' : '–')
+      const store = {
+        get: () => {
+          try {
+            return sessionStorage.getItem(KEY)
+          } catch {
+            return null
+          }
+        },
+        set: (v) => {
+          try {
+            v ? sessionStorage.setItem(KEY, v) : sessionStorage.removeItem(KEY)
+          } catch {}
+        },
+      }
+
+      function bars(
+        rows,
+        { total, getLabel = (r) => r.label ?? r.value ?? r.id, getValue = (r) => r.n ?? r.visitors } = {},
+      ) {
+        if (!rows || !rows.length) return '<p class="empty">No data yet.</p>'
+        const max = Math.max(...rows.map(getValue), 1)
+        return rows
+          .map((r) => {
+            const v = getValue(r)
+            const share = total ? ` <span class="pct">${pct(v, total)}</span>` : ''
+            return `<div class="bar-row"><span class="label" title="${esc(getLabel(r))}">${esc(getLabel(r))}</span><div class="track"><div class="fill" style="width:${(v / max) * 100}%"></div></div><span class="num">${n(v)}${share}</span></div>`
+          })
+          .join('')
+      }
+
+      function kpi(value, label, note) {
+        return `<div class="card kpi"><b>${value}</b><span>${esc(label)}</span>${note ? `<small>${esc(note)}</small>` : ''}</div>`
+      }
+
+      function dailyChart(daily) {
+        const w = 640,
+          h = 140,
+          pad = 22
+        const max = Math.max(...daily.map((d) => d.visitors), 1)
+        const step = (w - pad) / Math.max(daily.length, 1)
+        const rects = daily
+          .map((d, i) => {
+            const bh = (d.visitors / max) * (h - pad - 14)
+            return `<rect x="${pad + i * step + 1}" y="${h - pad - bh}" width="${Math.max(step - 2, 1)}" height="${bh}" rx="2" fill="var(--brand)"><title>${esc(d.day)}: ${d.visitors} visitors, ${d.newVisitors} new, ${d.plans} plans, ${d.sessions} sessions</title></rect>`
+          })
+          .join('')
+        const first = daily[0]?.day ?? '',
+          last = daily[daily.length - 1]?.day ?? ''
+        return `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="Visitors per day"><text x="0" y="12">${max}</text>${rects}<text x="${pad}" y="${h - 6}">${esc(first)}</text><text x="${w}" y="${h - 6}" text-anchor="end">${esc(last)}</text></svg>`
+      }
+
+      function heatmap(rows) {
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        const grid = Array.from({ length: 7 }, () => Array(24).fill(0))
+        for (const r of rows || []) grid[(r.dow + 6) % 7][r.hour] += r.n // Postgres: 0 = Sunday
+        const max = Math.max(...grid.flat(), 1)
+        let html =
+          '<div class="heat"><span></span>' +
+          Array.from({ length: 24 }, (_, h) => `<span>${h % 6 === 0 ? h : ''}</span>`).join('')
+        grid.forEach((row, d) => {
+          html +=
+            `<span>${days[d]}</span>` +
+            row
+              .map(
+                (c, h) =>
+                  `<i style="opacity:${c ? 0.12 + (c / max) * 0.88 : 0.05}" title="${days[d]} ${h}:00 · ${c}"></i>`,
+              )
+              .join('')
+        })
+        return html + '</div>'
+      }
+
+      const group = (obj, key) => (obj && obj[key]) || []
+
+      function render(s) {
+        const t = s.totals,
+          f = s.funnel,
+          e = s.engagement,
+          r = s.retention
+        const top = f[0]?.visitors || 0
+        $('meta').textContent =
+          `Updated ${new Date(s.generatedAt).toLocaleString()} · times in ${s.tz} · data since ${t.firstEvent ? new Date(t.firstEvent).toLocaleDateString() : 'launch'}`
+
+        const kpis = [
+          kpi(n(t.today), 'Visitors today'),
+          kpi(n(t.last7), 'Last 7 days'),
+          kpi(n(t.last30), 'Last 30 days'),
+          kpi(n(t.allTime), 'All time', 'unique browsers'),
+          kpi(n(t.planners), 'Built a plan', pct(t.planners, t.visitors) + ' of visitors in window'),
+          kpi(n(t.sessionsDone), 'Sessions finished', n(t.learners) + ' people'),
+          kpi(
+            r.day1.rate == null ? '–' : r.day1.rate + '%',
+            'Back the next day',
+            `${r.day1.returned} of ${r.day1.eligible}`,
+          ),
+          kpi(
+            r.week1.rate == null ? '–' : r.week1.rate + '%',
+            'Back within a week',
+            `${r.week1.returned} of ${r.week1.eligible}`,
+          ),
+        ].join('')
+
+        const c = s.choices || {}
+        const a = s.audience || {}
+        const blocks = [
+          `<div class="grid kpis">${kpis}</div>`,
+          `<div class="card"><h2>Visitors per day</h2>${dailyChart(s.daily)}</div>`,
+          `<div class="grid two">
+            <div class="card"><h2>Funnel</h2><p class="hint">People who reached each step, as a share of those who opened the app.</p>${bars(f, { total: top })}</div>
+            <div class="card"><h2>Where setup is abandoned</h2><p class="hint">People who saw each setup step.</p>${bars(s.wizard.steps, { getLabel: (x) => x.step, total: s.wizard.steps[0]?.visitors })}</div>
+          </div>`,
+          `<div class="grid two">
+            <div class="card"><h2>Topics chosen</h2>${bars(group(c, 'topic'), { total: t.plansStarted })}</div>
+            <div class="card"><h2>Levels</h2>${bars(group(c, 'level'), { total: t.plansStarted })}</div>
+            <div class="card"><h2>Topic + level</h2>${bars(group(c, 'topic_level'), { total: t.plansStarted })}</div>
+            <div class="card"><h2>Focus areas</h2>${bars(group(c, 'focus'), { total: t.plansStarted })}</div>
+            <div class="card"><h2>Why now</h2>${bars(group(c, 'reason'), { total: t.plansStarted })}</div>
+            <div class="card"><h2>Format</h2>${bars(group(c, 'format'), { total: t.plansStarted })}</div>
+            <div class="card"><h2>Days per week</h2>${bars(group(c, 'days_per_week'), { total: t.plansStarted })}</div>
+            <div class="card"><h2>Minutes per session</h2>${bars(group(c, 'session_minutes'), { total: t.plansStarted })}</div>
+          </div>`,
+          `<div class="grid two">
+            <div class="card"><h2>Most opened resources</h2>${bars(s.resources.clicked, { getLabel: (x) => x.title })}</div>
+            <div class="card"><h2>Most completed resources</h2>${bars(s.resources.completed, { getLabel: (x) => x.title })}</div>
+          </div>`,
+          `<div class="grid two">
+            <div class="card"><h2>When people open the app</h2><p class="hint">Their local time, by weekday and hour.</p>${heatmap(s.patterns.app_open)}</div>
+            <div class="card"><h2>When people finish sessions</h2><p class="hint">Their local time, by weekday and hour.</p>${heatmap(s.patterns.session_done)}</div>
+          </div>`,
+          `<div class="grid two">
+            <div class="card"><h2>Engagement</h2>
+              <table>
+                <tr><td>Average visits per visitor</td><td class="r">${n(e.avgVisitsPerVisitor)}</td></tr>
+                <tr><td>Average time per visit</td><td class="r">${e.avgMinutesPerVisit == null ? '–' : e.avgMinutesPerVisit + ' min'}</td></tr>
+                <tr><td>Median time to first plan</td><td class="r">${e.medianMinutesToFirstPlan == null ? '–' : e.medianMinutesToFirstPlan + ' min'}</td></tr>
+                <tr><td>Daily visitors ÷ 30-day visitors</td><td class="r">${t.stickiness == null ? '–' : t.stickiness + '%'}</td></tr>
+              </table>
+            </div>
+            <div class="card"><h2>Visits per person</h2>${bars([
+              { label: '1 visit', n: e.visitBuckets.once },
+              { label: '2–3', n: e.visitBuckets.twoToThree },
+              { label: '4–7', n: e.visitBuckets.fourToSeven },
+              { label: '8+', n: e.visitBuckets.eightPlus },
+            ])}</div>
+            <div class="card"><h2>Sessions finished per planner</h2>${bars([
+              { label: 'None', n: e.sessionsDonePerPlanner.none },
+              { label: '1', n: e.sessionsDonePerPlanner.one },
+              { label: '2–3', n: e.sessionsDonePerPlanner.twoToThree },
+              { label: '4–7', n: e.sessionsDonePerPlanner.fourToSeven },
+              { label: '8+', n: e.sessionsDonePerPlanner.eightPlus },
+            ])}</div>
+            <div class="card"><h2>Quizzes</h2>${
+              s.quizzes.length
+                ? `<table><tr><th>Topic</th><th class="r">Attempts</th><th class="r">People</th><th class="r">Avg score</th></tr>${s.quizzes.map((q) => `<tr><td>${esc(q.topic)}</td><td class="r">${n(q.attempts)}</td><td class="r">${n(q.people)}</td><td class="r">${q.avgScore == null ? '–' : q.avgScore + '%'}</td></tr>`).join('')}</table>`
+                : '<p class="empty">No quiz attempts yet.</p>'
+            }</div>
+          </div>`,
+          `<div class="grid two">
+            <div class="card"><h2>Devices</h2>${bars(group(a, 'device'))}</div>
+            <div class="card"><h2>Countries</h2>${bars(group(a, 'country'))}</div>
+            <div class="card"><h2>Where visitors come from</h2>${bars(group(a, 'referrer'))}</div>
+            <div class="card"><h2>Languages</h2>${bars(group(a, 'language'))}</div>
+          </div>`,
+          `<div class="card" style="margin-top:14px"><h2>Errors people hit</h2>${
+            s.errors.length
+              ? `<table><tr><th>Message</th><th class="r">Times</th><th class="r">People</th><th class="r">Last seen</th></tr>${s.errors.map((x) => `<tr><td>${esc(x.msg)}</td><td class="r">${n(x.n)}</td><td class="r">${n(x.people)}</td><td class="r">${x.lastSeen ? new Date(x.lastSeen).toLocaleDateString() : '–'}</td></tr>`).join('')}</table>`
+              : '<p class="empty">None reported.</p>'
+          }</div>`,
+        ]
+        $('out').innerHTML = blocks.join('')
+      }
+
+      async function load() {
+        const token = store.get()
+        if (!token) return show('login')
+        $('app-err').textContent = ''
+        const days = $('days').value
+        try {
+          const res = await fetch(`/api/hu/stats?days=${encodeURIComponent(days)}&tz=${encodeURIComponent(tz)}`, {
+            headers: { Authorization: 'Bearer ' + token },
+            cache: 'no-store',
+          })
+          if (res.status === 401) {
+            store.set(null)
+            show('login')
+            $('login-err').textContent = 'That token was not accepted.'
+            return
+          }
+          if (res.status === 503)
+            throw new Error('Analytics is not configured on the server yet (no token or database).')
+          if (!res.ok) throw new Error('The server returned ' + res.status + '.')
+          show('app')
+          render(await res.json())
+        } catch (err) {
+          show('app')
+          $('app-err').textContent = err.message || 'Could not load stats.'
+        }
+      }
+
+      function show(which) {
+        $('login').hidden = which !== 'login'
+        $('app').hidden = which !== 'app'
+      }
+
+      $('login-form').addEventListener('submit', (ev) => {
+        ev.preventDefault()
+        $('login-err').textContent = ''
+        store.set($('token').value.trim())
+        $('token').value = ''
+        load()
+      })
+      $('days').addEventListener('change', load)
+      $('refresh').addEventListener('click', load)
+      $('signout').addEventListener('click', () => {
+        store.set(null)
+        show('login')
+      })
+      load()
+    </script>
+  </body>
+</html>

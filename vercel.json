@@ -26,5 +26,29 @@
       "source": "/14-0/:path*",
       "destination": "https://fourteen-zero.vercel.app/14-0/:path*"
     }
+  ],
+  "headers": [
+    {
+      "source": "/homeuni/stats.html",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/api/hu/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
   ]
 }

@@ -53,3 +53,17 @@ Some sites (Cloudflare-protected pages) refuse automated requests; the checker r
 | `src/utils/quiz.js`, `streak.js`, `dates.js` | Quiz building, streaks, and timezone-safe local dates       |
 | `src/components/`                            | Wizard, Dashboard, SessionCard, Quiz, dialogs               |
 | `tests/`                                     | Planner, streak, tailoring, quiz and data-integrity tests   |
+
+## Usage analytics
+
+home uni counts visits and feature use so it can be improved. It is anonymous by construction:
+
+- A visitor is a random ID kept in `localStorage`. No accounts, cookies, IP addresses or fingerprinting are stored; country comes from Vercel's edge header.
+- The server only accepts the events and properties listed in `api/_lib/events.js`. Anything else, including free text such as a learner's goal (only its length is sent), is dropped.
+- Do Not Track, Global Privacy Control, automated browsers and an in-app opt-out all switch it off. Opting out also deletes the stored rows (`/api/hu/forget`). Rows are purged after 400 days.
+
+**Setup (Vercel):** attach a Postgres database (Neon via the Marketplace injects `DATABASE_URL`), then set `ANALYTICS_ADMIN_TOKEN` to a long random string. Tables are created on first use.
+
+**Viewing it:** open `/homeuni/stats.html` and enter the token. It calls `GET /api/hu/stats?days=30&tz=<zone>` with `Authorization: Bearer <token>`; the token is kept in that tab only. Without a database configured the collector quietly does nothing and the app is unaffected.
+
+Tests run against real Postgres semantics (PGlite): `npm test`.
