@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FOCUS_AREAS, TOPICS } from '../data/curriculum.js'
 import { QUIZ_BANK } from '../data/quizzes.js'
 import { isSessionDone, overdueSessions, progress, quizBlocks, upNext } from '../utils/plan.js'
@@ -7,7 +7,9 @@ import { matchedFocus } from '../utils/tailor.js'
 import { diffDays, sameDay } from '../utils/dates.js'
 import { formatMinutes } from '../utils/resources.js'
 import { activeStreak, practicedToday } from '../utils/streak.js'
+import { track } from '../utils/analytics.js'
 import Logo from './Logo.jsx'
+import PrivacyNote from './PrivacyNote.jsx'
 import SessionCard from './SessionCard.jsx'
 import { QuizCard } from './Quiz.jsx'
 import { Card, Chip, GhostButton, PrimaryButton } from './ui.jsx'
@@ -79,6 +81,28 @@ export default function Dashboard({
   const windowEnd = showAll ? plan.weeks.length : currentWeekNumber + 3
   const hiddenBefore = plan.weeks.filter((w) => w.number < windowStart).length
   const hiddenAfter = plan.weeks.filter((w) => w.number > windowEnd).length
+
+  const trackResourceClick = (unit, item) =>
+    track('resource_click', {
+      item: item.id,
+      part: unit.part,
+      type: item.type,
+      topic: profile.topic,
+      level: profile.level,
+    })
+
+  // Once per visit: a snapshot of where this learner is in their plan.
+  useEffect(() => {
+    track('dashboard_view', {
+      topic: profile.topic,
+      level: profile.level,
+      done_pct: Math.round(stats.fraction * 100),
+      streak: shownStreak,
+      overdue: overdue.length,
+      day_in_plan: Math.max(0, diffDays(today, plan.sessions[0]?.date ?? today)),
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const minutesLearnedLabel = formatMinutes(stats.doneMinutes)
   const endLabel = plan.endDate ? fmt(plan.endDate, { month: 'long', day: 'numeric' }) : null
@@ -201,6 +225,7 @@ export default function Dashboard({
                 onToggle={onToggleSession}
                 focusFor={focusFor}
                 hasFocus={profile.focus.length > 0}
+                onResourceClick={trackResourceClick}
               />
             </div>
           ) : (
@@ -281,6 +306,7 @@ export default function Dashboard({
                                   focusFor={focusFor}
                                   hasFocus={profile.focus.length > 0}
                                   label={isOverdue ? 'overdue' : undefined}
+                                  onResourceClick={trackResourceClick}
                                 />
                               </>
                             )}
@@ -324,6 +350,7 @@ export default function Dashboard({
       </section>
 
       <p className="mt-12 text-center text-xs text-slate-400">Your progress is saved in this browser.</p>
+      <PrivacyNote className="mt-3 text-center" />
     </div>
   )
 }

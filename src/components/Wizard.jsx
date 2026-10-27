@@ -1,11 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CURRICULUM, LEVELS, TOPICS } from '../data/curriculum.js'
 import videoMeta from '../data/videoMeta.json'
 import { buildPlan } from '../utils/plan.js'
 import { enrich, formatMinutes } from '../utils/resources.js'
 import { availableFocusAreas, tailorItems } from '../utils/tailor.js'
 import { startOfDay, toKey } from '../utils/dates.js'
+import { track } from '../utils/analytics.js'
 import Logo from './Logo.jsx'
+import PrivacyNote from './PrivacyNote.jsx'
 import { Chip, GhostButton, PrimaryButton } from './ui.jsx'
 
 const LEVEL_BLURBS = {
@@ -101,8 +103,20 @@ export default function Wizard({ onComplete, canCancel, onCancel }) {
   const current = steps[step]
   const last = steps.length - 1
 
-  const next = () => setStep((s) => Math.min(last, s + 1))
-  const back = () => setStep((s) => Math.max(0, s - 1))
+  const direction = useRef('next')
+  const next = () => {
+    direction.current = 'next'
+    setStep((s) => Math.min(last, s + 1))
+  }
+  const back = () => {
+    direction.current = 'back'
+    setStep((s) => Math.max(0, s - 1))
+  }
+
+  // One event per step shown, which is what the setup drop-off chart is built from.
+  useEffect(() => {
+    track('wizard_step', { step: steps[step], idx: step, dir: direction.current })
+  }, [step])
   const pickAndAdvance = (setter, value) => {
     setter(value)
     setTimeout(next, 180)
@@ -126,18 +140,24 @@ export default function Wizard({ onComplete, canCancel, onCancel }) {
   const toggleReason = (r) => setReasons((rs) => (rs.includes(r) ? rs.filter((x) => x !== r) : [...rs, r]))
 
   function finish() {
-    onComplete({
-      topic,
-      level,
-      focus: activeFocus,
-      goal: goal.trim(),
-      reasons,
-      format,
-      daysPerWeek,
-      sessionMinutes,
-      startDate: toKey(new Date()),
-      archived: [],
-    })
+    onComplete(
+      {
+        topic,
+        level,
+        focus: activeFocus,
+        goal: goal.trim(),
+        reasons,
+        format,
+        daysPerWeek,
+        sessionMinutes,
+        startDate: toKey(new Date()),
+        archived: [],
+      },
+      {
+        sessions: preview.plan.sessions.length,
+        totalMin: preview.plan.totalMinutes,
+      },
+    )
   }
 
   const topicLabel = TOPICS.find((t) => t.id === topic)?.label
@@ -390,6 +410,8 @@ export default function Wizard({ onComplete, canCancel, onCancel }) {
           </PrimaryButton>
         )}
       </div>
+
+      <PrivacyNote className="mt-8" />
     </div>
   )
 }

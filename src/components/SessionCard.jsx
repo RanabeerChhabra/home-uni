@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { formatMinutes, formatViews, timestamp, withStart } from '../utils/resources.js'
 import { Chip } from './ui.jsx'
 
-function Segment({ unit, item, done, focusLabels, background }) {
+function Segment({ unit, item, done, focusLabels, background, onResourceClick }) {
   const isVideo = item.type === 'video'
   const href = unit.startSec ? withStart(item.url, unit.startSec) : item.url
   const split = unit.parts > 1
@@ -14,6 +14,8 @@ function Segment({ unit, item, done, focusLabels, background }) {
         href={href}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => onResourceClick?.(unit, item)}
+        onAuxClick={() => onResourceClick?.(unit, item)}
         className={`font-semibold leading-snug hover:underline ${done ? 'text-slate-400 line-through' : 'text-brand-700'}`}
       >
         {item.title}
@@ -52,7 +54,16 @@ function Segment({ unit, item, done, focusLabels, background }) {
   )
 }
 
-export default function SessionCard({ session, itemsById, done, onToggle, focusFor, hasFocus, label }) {
+export default function SessionCard({
+  session,
+  itemsById,
+  done,
+  onToggle,
+  focusFor,
+  hasFocus,
+  label,
+  onResourceClick,
+}) {
   const [burst, setBurst] = useState(false)
 
   function toggle() {
@@ -102,6 +113,7 @@ export default function SessionCard({ session, itemsById, done, onToggle, focusF
               done={done}
               focusLabels={focusFor(unit.itemId)}
               background={hasFocus && focusFor(unit.itemId).length === 0}
+              onResourceClick={onResourceClick}
             />
           ))}
         </div>

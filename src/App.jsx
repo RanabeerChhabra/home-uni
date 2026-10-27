@@ -6,15 +6,24 @@ import { QuizModal } from './components/Quiz.jsx'
 import { CURRICULUM } from './data/curriculum.js'
 import { QUIZ_BANK } from './data/quizzes.js'
 import videoMeta from './data/videoMeta.json'
-import { buildPlan, isSessionDone } from './utils/plan.js'
+import { buildPlan, isSessionDone, overdueSessions, progress } from './utils/plan.js'
 import { enrich } from './utils/resources.js'
 import { tailorItems } from './utils/tailor.js'
 import { quizStatus, POINTS_PER_CORRECT } from './utils/quiz.js'
 import { clearState, loadState, saveState } from './utils/storage.js'
 import { initialStreak, recordActivity } from './utils/streak.js'
-import { fromKey, startOfDay, toKey } from './utils/dates.js'
+import { diffDays, fromKey, startOfDay, toKey } from './utils/dates.js'
+import { startAnalytics, track } from './utils/analytics.js'
 
 const saved = loadState()
+
+// Reasons are fixed labels ("Switch careers"); analytics gets a stable token instead.
+const slug = (text) =>
+  text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 48)
 
 // Re-renders when the calendar day changes, so "today" never goes stale in a long-lived tab.
 function useToday() {
@@ -40,6 +49,8 @@ export default function App() {
   const [confirm, setConfirm] = useState(null) // 'startOver' | 'replan'
   const [building, setBuilding] = useState(false) // wizard shown over an existing plan
   const today = useToday()
+
+  useEffect(() => startAnalytics({ hasPlan: Boolean(saved?.profile) }), [])
 
   const plan = useMemo(() => {
     if (!profile) return null
@@ -73,36 +84,71 @@ export default function App() {
   }, [plan, done])
   const xp = learnedXp + quizXp
 
-  const startPlan = useCallback((newProfile) => {
-    setProfile(newProfile)
-    setDone(new Set())
-    setQuizResults({})
-    setBuilding(false)
-  }, [])
+  const startPlan = useCallback(
+    (newProfile, summary) => {
+      track('plan_started', {
+        topic: newProfile.topic,
+        level: newProfile.level,
+        focus: newProfile.focus,
+        reasons: newProfile.reasons.map(slug),
+        format: newProfile.format,
+        days: newProfile.daysPerWeek,
+        minutes: newProfile.sessionMinutes,
+        goal_len: newProfile.goal.length, // only the length: what someone writes is never sent
+        sessions: summary?.sessions,
+        total_min: summary?.totalMin,
+        again: building,
+      })
+      setProfile(newProfile)
+      setDone(new Set())
+      setQuizResults({})
+      setBuilding(false)
+    },
+    [building],
+  )
 
   const toggleSession = useCallback(
     (session) => {
       const completed = isSessionDone(session, done)
-      setDone((prev) => {
-        const next = new Set(prev)
-        for (const u of session.units) {
-          if (completed) next.delete(u.id)
-          else next.add(u.id)
-        }
-        return next
+      const next = new Set(done)
+      for (const u of session.units) {
+        if (completed) next.delete(u.id)
+        else next.add(u.id)
+      }
+      setDone(next)
+
+      const where = { topic: profile.topic, level: profile.level }
+      if (completed) {
+        track('session_undone', { ...where, mins: session.minutes })
+        return
+      }
+      setStreak((s) => recordActivity(s, new Date()))
+      track('session_done', {
+        ...where,
+        mins: session.minutes,
+        units: session.units.length,
+        items: [...new Set(session.units.map((u) => u.itemId))],
       })
-      if (!completed) setStreak((s) => recordActivity(s, new Date()))
+      if (plan.sessions.every((s) => isSessionDone(s, next))) {
+        track('plan_complete', {
+          ...where,
+          sessions: plan.sessions.length,
+          days: diffDays(new Date(), fromKey(profile.startDate)),
+        })
+      }
     },
-    [done],
+    [done, plan, profile],
   )
 
   function replan() {
+    track('replan', { overdue: overdueSessions(plan, done, today).length })
     // Everything finished so far is kept (archived); the rest restarts from today.
     setProfile((p) => ({ ...p, startDate: toKey(new Date()), archived: [...done] }))
     setConfirm(null)
   }
 
   function startOver() {
+    track('start_over', { done_pct: Math.round(progress(plan, done).fraction * 100) })
     clearState()
     setProfile(null)
     setDone(new Set())
@@ -114,11 +160,23 @@ export default function App() {
   function openQuizFor(block) {
     const status = quizStatus(block, plan, done, QUIZ_BANK)
     if (!status.unlocked) return
+    track('quiz_open', {
+      topic: profile.topic,
+      level: profile.level,
+      attempt: (quizResults[block.id]?.attempts ?? 0) + 1,
+    })
     setOpenQuiz({ block, questionIds: status.questionIds, attempt: quizResults[block.id]?.attempts ?? 0 })
   }
 
   function finishQuiz(correct, total) {
     const id = openQuiz.block.id
+    track('quiz_complete', {
+      topic: profile.topic,
+      level: profile.level,
+      correct,
+      total,
+      attempt: (quizResults[id]?.attempts ?? 0) + 1,
+    })
     setQuizResults((prev) => {
       const old = prev[id]
       return { ...prev, [id]: { best: Math.max(old?.best ?? 0, correct), total, attempts: (old?.attempts ?? 0) + 1 } }
@@ -143,7 +201,10 @@ export default function App() {
         onOpenQuiz={openQuizFor}
         onReplan={() => setConfirm('replan')}
         onStartOver={() => setConfirm('startOver')}
-        onNewPlan={() => setBuilding(true)}
+        onNewPlan={() => {
+          track('new_plan')
+          setBuilding(true)
+        }}
       />
 
       {openQuiz && (
