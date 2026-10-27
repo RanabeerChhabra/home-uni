@@ -43,8 +43,12 @@
       "destination": "https://hidden-city-zeta.vercel.app/hidden-city/"
     },
     {
-      "source": "/hidden-city/:path*",
-      "destination": "https://hidden-city-zeta.vercel.app/hidden-city/:path*"
+      "source": "/hidden-city/",
+      "destination": "https://hidden-city-zeta.vercel.app/hidden-city/"
+    },
+    {
+      "source": "/hidden-city/:path+",
+      "destination": "https://hidden-city-zeta.vercel.app/hidden-city/:path+"
     }
   ],
   "headers": [
